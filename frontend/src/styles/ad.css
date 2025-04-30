@@ -1,0 +1,14 @@
+.ad-box {
+    margin: 30px auto;
+    padding: 20px;
+    background: #202020;
+    border-radius: 12px;
+    width: 60%;
+    box-shadow: 0 0 10px #00ffe1;
+  }
+  
+  .ad-box p {
+    font-size: 1.1rem;
+    color: #00ffe1;
+  }
+  

@@ -1,0 +1,81 @@
+/* Wrapper for everything */
+.ad-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+
+/* Ad slideshow container */
+.ad-slideshow {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+}
+
+/* Ad display area */
+.slideshow-container {
+  position: absolute;
+  top: 5%;
+  width: 80%;
+  height: 80%;
+  text-align: center;
+  object-fit: contain;
+}
+
+.slide-image {
+  height: 100%;
+  width: 100%;
+  border-radius: 16px;
+}
+
+/* QR code in corner */
+.qr-image {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Feedback container */
+.feedback-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-qr {
+  width: 300px;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(255,255,255,0.3);
+}
+
+.feedback-text {
+  font-size: 1.5rem;
+  color: #fff;
+  background-color: #111;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Loading text */
+.loading-text {
+  color: #fff;
+  font-size: 2rem;
+  text-align: center;
+  margin-top: 20%;
+}
