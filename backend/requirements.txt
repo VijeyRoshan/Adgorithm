@@ -9,4 +9,5 @@ deepface
 tensorflow
 keras
 tf-keras
+openpyxl
 

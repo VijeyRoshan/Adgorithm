@@ -61,6 +61,10 @@ const CameraCapture = () => {
           body: formData,
         });
 
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
         const data = await res.json();
         console.log("Predicted:", data.age_group, data.gender);
 
@@ -69,6 +73,8 @@ const CameraCapture = () => {
         }
       } catch (error) {
         console.error("Prediction error:", error);
+        setLoading(false);
+        setFaceDetected(false);
       }
     }, "image/jpeg");
   }, [navigate]);
