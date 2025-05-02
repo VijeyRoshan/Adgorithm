@@ -1,15 +1,32 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import cv2
 import numpy as np
 from deepface import DeepFace
 from collections import Counter
 import os
+import pandas as pd
 from openpyxl import Workbook, load_workbook
 from datetime import datetime
+from werkzeug.utils import secure_filename
+import json
 
 app = Flask(__name__)
 CORS(app)
+
+# Configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+EXCEL_FILE = r'D:\Adgorithm\backend\ad_stats_log.xlsx'
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Ensure upload directories exist
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'ads'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'qr'), exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Load OpenCV's built-in face detector
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -30,12 +47,7 @@ def get_age_group(age):
 # Function to log detection results into an Excel file
 def log_detection_to_excel(age_group, gender):
     try:
-        # Create a logs directory if it doesn't exist
-        log_dir = "logs"
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-
-        file_name = os.path.join(log_dir, "ad_stats_log.xlsx")
+        file_name = r'D:\Adgorithm\backend\ad_stats_log.xlsx'
         print(f"Attempting to save Excel file at: {os.path.abspath(file_name)}")
 
         if not os.path.exists(file_name):
@@ -152,6 +164,128 @@ def predict_age_gender():
     except Exception as e:
         print(f"Error in predict_age_gender: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+# Admin Routes
+@app.route('/api/admin/stats', methods=['GET'])
+def get_stats():
+    try:
+        # Read Excel file
+        df = pd.read_excel(EXCEL_FILE)
+        
+        # Calculate statistics based on available columns
+        stats = {
+            'totalViews': len(df),
+            'ageDistribution': df['Age Group'].value_counts().to_dict(),
+            'genderDistribution': df['Gender'].value_counts().to_dict(),
+        }
+        
+        # Add timeSeriesData for charts
+        time_series = (
+            df.groupby('date')
+              .agg({'views': 'sum', 'engagement': 'sum'})
+              .reset_index()
+        )
+        stats['timeSeriesData'] = [
+            {
+                'date': str(row['date']),
+                'views': int(row['views']),
+                'engagement': int(row['engagement'])
+            }
+            for _, row in time_series.iterrows()
+        ]
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/ads', methods=['GET', 'POST'])
+def manage_ads():
+    if request.method == 'GET':
+        try:
+            # Read ads data from JSON file
+            with open('uploads/ads.json', 'r') as f:
+                ads = json.load(f)
+            return jsonify(ads)
+        except FileNotFoundError:
+            return jsonify([])
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            if 'adImage' not in request.files or 'qrImage' not in request.files:
+                return jsonify({'error': 'No file uploaded'}), 400
+            
+            ad_image = request.files['adImage']
+            qr_image = request.files['qrImage']
+            
+            if ad_image.filename == '' or qr_image.filename == '':
+                return jsonify({'error': 'No file selected'}), 400
+            
+            if not (allowed_file(ad_image.filename) and allowed_file(qr_image.filename)):
+                return jsonify({'error': 'Invalid file type'}), 400
+            
+            # Generate unique filenames
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            ad_filename = f"ad_{timestamp}_{secure_filename(ad_image.filename)}"
+            qr_filename = f"qr_{timestamp}_{secure_filename(qr_image.filename)}"
+            
+            # Save files
+            ad_image.save(os.path.join(app.config['UPLOAD_FOLDER'], 'ads', ad_filename))
+            qr_image.save(os.path.join(app.config['UPLOAD_FOLDER'], 'qr', qr_filename))
+            
+            # Save ad data
+            ad_data = {
+                'id': timestamp,
+                'imageUrl': f"/uploads/ads/{ad_filename}",
+                'qrUrl': f"/uploads/qr/{qr_filename}",
+                'ageGroup': request.form.get('ageGroup'),
+                'gender': request.form.get('gender'),
+                'websiteLink': request.form.get('websiteLink'),
+                'isActive': request.form.get('isActive', 'true').lower() == 'true'
+            }
+            
+            try:
+                with open('uploads/ads.json', 'r') as f:
+                    ads = json.load(f)
+            except FileNotFoundError:
+                ads = []
+            
+            ads.append(ad_data)
+            
+            with open('uploads/ads.json', 'w') as f:
+                json.dump(ads, f)
+            
+            return jsonify(ad_data), 201
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/ads/<ad_id>', methods=['PATCH'])
+def update_ad(ad_id):
+    try:
+        with open('uploads/ads.json', 'r') as f:
+            ads = json.load(f)
+        
+        for ad in ads:
+            if ad['id'] == ad_id:
+                ad['isActive'] = request.json.get('isActive', ad['isActive'])
+                break
+        
+        with open('uploads/ads.json', 'w') as f:
+            json.dump(ads, f)
+        
+        return jsonify({'message': 'Ad updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/uploads/ads/<filename>')
+def uploaded_ad(filename):
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'ads'), filename)
+
+@app.route('/uploads/qr/<filename>')
+def uploaded_qr(filename):
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'qr'), filename)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
