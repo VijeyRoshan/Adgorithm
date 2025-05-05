@@ -114,7 +114,8 @@ const CameraCapture = () => {
   }, [loading, faceDetected, captureImage]);
 
   return (
-    <div className="camera-page">
+    <>
+      <div className="camera-page">
       <div className="camera-left">
         <h1>
           Smart.<br /> Ethical. <br />Engaging...
@@ -132,6 +133,21 @@ const CameraCapture = () => {
         </div>
       </div>
     </div>
+    <footer style={{
+      position: 'fixed',
+      left: 0,
+      bottom: 0,
+      width: '100%',
+      backgroundColor: '#f4f0fa',
+      color: '#222',
+      textAlign: 'center',
+      padding: '10px 0',
+      fontSize: '1rem',
+      zIndex: 100
+    }}>
+      Adgorithm. All rights reserved
+    </footer>
+    </>
   );
 };
 

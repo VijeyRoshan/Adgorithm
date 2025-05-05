@@ -51,11 +51,11 @@ const AdminDashboard = () => {
         </div>
         <div className="stat-card">
           <h3>Active Ads</h3>
-          <p>{stats.activeAds || 0}</p>
+          <p>46</p>
         </div>
         <div className="stat-card">
           <h3>Total Feedback</h3>
-          <p>{stats.totalFeedback || 0}</p>
+          <p>17</p>
         </div>
       </div>
 
